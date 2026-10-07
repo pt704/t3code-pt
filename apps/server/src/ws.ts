@@ -188,6 +188,7 @@ import { attachmentRelativePath, createDeterministicAttachmentId } from "./attac
 import { parseBase64DataUrl } from "./imageMime.ts";
 import { deletePendingAttachment, issueAttachmentUploadUrl } from "./assets/AttachmentUpload.ts";
 import * as PortScanner from "./preview/PortScanner.ts";
+import * as ProcessTracker from "./processes/ProcessTracker.ts";
 import * as WorkspaceEntries from "./workspace/WorkspaceEntries.ts";
 import * as WorkspaceFileSystem from "./workspace/WorkspaceFileSystem.ts";
 import { readWorkflowScript } from "./orchestration-v2/workflowScriptQuery.ts";
@@ -1269,6 +1270,7 @@ const layerWsRpc = (
       const terminalManager = yield* TerminalManager.TerminalManager;
       const previewManager = yield* PreviewManager.PreviewManager;
       const portDiscovery = yield* PortScanner.PortDiscovery;
+      const processTracker = yield* ProcessTracker.ProcessTracker;
       const providerRegistry = yield* ProviderRegistry.ProviderRegistry;
       const modelManifest = yield* ModelManifest.ModelManifest;
       const providerVersionCache = yield* ProviderMaintenance.ProviderVersionCache;
@@ -2947,6 +2949,12 @@ const layerWsRpc = (
               );
             }),
           ),
+        [WS_METHODS.processesSubscribe]: (_input) => processTracker.subscribe,
+        [WS_METHODS.processesStop]: (input) => processTracker.stop(input),
+        [WS_METHODS.processesRestart]: (input) => processTracker.restart(input),
+        [WS_METHODS.processesListActions]: (input) => processTracker.listActions(input),
+        [WS_METHODS.processesRunAction]: (input) =>
+          processTracker.runAction(input, { kind: "user", threadId: null }),
         [WS_METHODS.subscribeServerConfig]: (input) =>
           Stream.unwrap(
             Effect.gen(function* () {
@@ -3132,6 +3140,7 @@ export const layer = Layer.unwrap(
     const serverBrowser = yield* ServerBrowser.ServerBrowser;
     const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
     const pullRequests = yield* PullRequestService.PullRequestService;
+    const processTracker = yield* ProcessTracker.ProcessTracker;
     const sql = yield* SqlClient.SqlClient;
     return HttpRouter.add(
       "GET",
@@ -3198,6 +3207,7 @@ export const layer = Layer.unwrap(
               // One server-lifetime service means clients share the same PR caches, and a WS
               // mutation invalidates the HTTP diff cache that every client reads from.
               Layer.provide(Layer.succeed(PullRequestService.PullRequestService, pullRequests)),
+              Layer.provide(Layer.succeed(ProcessTracker.ProcessTracker, processTracker)),
               Layer.provide(
                 SourceControlDiscovery.layer.pipe(
                   Layer.provide(

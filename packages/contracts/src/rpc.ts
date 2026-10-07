@@ -317,6 +317,15 @@ import {
   ProviderConsumeResetCreditResult,
 } from "./providerUsageLimits.ts";
 import { UsagePricing, UsageReadError, UsageSummary, UsageSummaryInput } from "./usage.ts";
+import {
+  ProcessesError,
+  ProjectActionList,
+  ProjectActionListInput,
+  ProjectActionRunInput,
+  ProcessTerminalRef,
+  TrackedProcessInput,
+  TrackedProcessList,
+} from "./processes.ts";
 import { ServerSettings, ServerSettingsError, ServerSettingsPatch } from "./settings.ts";
 import {
   ScheduledTaskDeleteInput,
@@ -565,6 +574,13 @@ export const WS_METHODS = {
   subscribeAuthAccess: "subscribeAuthAccess",
   subscribeBackgroundPolicy: "subscribeBackgroundPolicy",
   subscribeResourceTelemetry: "subscribeResourceTelemetry",
+
+  // Process tracking and project actions
+  processesSubscribe: "processes.subscribe",
+  processesStop: "processes.stop",
+  processesRestart: "processes.restart",
+  processesListActions: "processes.listActions",
+  processesRunAction: "processes.runAction",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -1503,6 +1519,36 @@ const WsSubscribeDiscoveredLocalServersRpc = Rpc.make(WS_METHODS.subscribeDiscov
   stream: true,
 });
 
+/** Streams tracked processes: a snapshot on subscribe, then a fresh list whenever it changes. */
+const WsProcessesSubscribeRpc = Rpc.make(WS_METHODS.processesSubscribe, {
+  payload: Schema.Struct({}),
+  success: TrackedProcessList,
+  error: EnvironmentAuthorizationError,
+  stream: true,
+});
+
+const WsProcessesStopRpc = Rpc.make(WS_METHODS.processesStop, {
+  payload: TrackedProcessInput,
+  error: Schema.Union([ProcessesError, EnvironmentAuthorizationError]),
+});
+
+const WsProcessesRestartRpc = Rpc.make(WS_METHODS.processesRestart, {
+  payload: TrackedProcessInput,
+  error: Schema.Union([ProcessesError, EnvironmentAuthorizationError]),
+});
+
+const WsProcessesListActionsRpc = Rpc.make(WS_METHODS.processesListActions, {
+  payload: ProjectActionListInput,
+  success: ProjectActionList,
+  error: Schema.Union([ProcessesError, EnvironmentAuthorizationError]),
+});
+
+const WsProcessesRunActionRpc = Rpc.make(WS_METHODS.processesRunAction, {
+  payload: ProjectActionRunInput,
+  success: ProcessTerminalRef,
+  error: Schema.Union([ProcessesError, EnvironmentAuthorizationError]),
+});
+
 const WsDeviceTestHostRpc = Rpc.make(WS_METHODS.deviceTestHost, {
   payload: SshDeviceHostConfig,
   success: DeviceHostSummary,
@@ -1966,6 +2012,11 @@ export const WsRpcGroup = RpcGroup.make(
   WsPreviewReportStatusRpc,
   WsSubscribePreviewEventsRpc,
   WsSubscribeDiscoveredLocalServersRpc,
+  WsProcessesSubscribeRpc,
+  WsProcessesStopRpc,
+  WsProcessesRestartRpc,
+  WsProcessesListActionsRpc,
+  WsProcessesRunActionRpc,
   WsDeviceConfigureRpc,
   WsDeviceListRpc,
   WsDeviceTestHostRpc,

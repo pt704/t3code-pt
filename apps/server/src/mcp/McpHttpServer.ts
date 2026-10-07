@@ -49,6 +49,8 @@ import { WorktreeToolkit } from "./toolkits/worktree/tools.ts";
 import * as WorktreeMcpService from "./WorktreeMcpService.ts";
 import * as PullRequestsHandlers from "./toolkits/pullRequests/handlers.ts";
 import { PullRequestsToolkit } from "./toolkits/pullRequests/tools.ts";
+import * as ProcessesHandlers from "./toolkits/processes/handlers.ts";
+import { ProcessesToolkit } from "./toolkits/processes/tools.ts";
 import * as DeviceHandlers from "./toolkits/device/handlers.ts";
 import {
   DeviceScreenshotTool,
@@ -838,6 +840,8 @@ const layerDeviceScreenshotRegistration = imageToolRegistration(
   DeviceHandlers.layerScreenshot,
 );
 
+const layerProcessesRegistration = toolkitRegistration(ProcessesToolkit, ProcessesHandlers.layer);
+
 export const layerDeviceToolkit = Layer.mergeAll(
   layerDeviceStandardToolkitRegistration,
   layerDeviceScreenshotRegistration,
@@ -860,6 +864,7 @@ export const layer = Layer.mergeAll(
   layerPreviewControlsRegistration,
   layerWorktreeToolkitRegistration,
   layerPullRequestsToolkit,
+  layerProcessesRegistration,
   layerDeviceToolkit,
   layerHtmlToolkit,
 ).pipe(Layer.provideMerge(layerMcpTransport));

@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
+import { ActivityIcon, ArrowLeftIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -196,6 +196,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     void navigate({ to: "/usage" });
   }, [isMobile, navigate, setOpenMobile]);
 
+  const handleProcessesClick = useCallback(() => {
+    closeMobileSidebar();
+    void navigate({ to: "/processes" });
+  }, [closeMobileSidebar, navigate]);
+
   const handleBackClick = useCallback(() => {
     closeMobileSidebar();
     void navigateToMainApp();
@@ -224,6 +229,11 @@ export const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
               onClick={handlePullRequestsClick}
             />
           ) : null}
+          <SidebarUtilityItem
+            icon={<ActivityIcon />}
+            label="Processes"
+            onClick={handleProcessesClick}
+          />
           <SidebarUtilityItem
             icon={<ChartNoAxesColumnIcon />}
             label="Usage"

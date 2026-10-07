@@ -193,6 +193,13 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.previewReportStatus]: AuthPreviewOperateScope,
   [WS_METHODS.subscribePreviewEvents]: AuthOrchestrationReadScope,
   [WS_METHODS.subscribeDiscoveredLocalServers]: AuthOrchestrationReadScope,
+  // Process rows carry command lines, and stopping or running one is what a
+  // terminal could do, so they share the terminal scopes.
+  [WS_METHODS.processesSubscribe]: AuthTerminalReadScope,
+  [WS_METHODS.processesListActions]: AuthTerminalReadScope,
+  [WS_METHODS.processesStop]: AuthTerminalOperateScope,
+  [WS_METHODS.processesRestart]: AuthTerminalOperateScope,
+  [WS_METHODS.processesRunAction]: AuthTerminalOperateScope,
   [WS_METHODS.deviceConfigure]: AuthSettingsWriteScope,
   [WS_METHODS.deviceTestHost]: AuthSettingsWriteScope,
   [WS_METHODS.deviceList]: AuthOrchestrationReadScope,

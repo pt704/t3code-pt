@@ -323,6 +323,33 @@ export function summarizeT3ToolCalls(
         quantity(countEntities(entityIds("cwd")), "repository", "repositories"),
       );
       break;
+    case "process-list":
+      label = phrase("Listed", "list", `running processes ${times}`);
+      break;
+    case "process-stop":
+      label = phrase(
+        "Stopped",
+        "stop",
+        quantity(countEntities(entityIds("processId")), "process", "processes"),
+      );
+      break;
+    case "process-restart":
+      label = phrase(
+        "Restarted",
+        "restart",
+        quantity(countEntities(entityIds("processId")), "process", "processes"),
+      );
+      break;
+    case "action-list":
+      label = phrase("Listed", "list", `project actions ${times}`);
+      break;
+    case "action-run":
+      label = phrase(
+        "Ran",
+        "run",
+        quantity(countEntities(entityIds("actionId")), "project action"),
+      );
+      break;
     case "environment-read":
       label = phrase("Checked", "check", `environment preferences ${times}`);
       break;

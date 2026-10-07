@@ -50,6 +50,11 @@ export type T3McpToolSummaryAction =
   | "project-clone"
   | "environment-read"
   | "environment-update"
+  | "process-list"
+  | "process-stop"
+  | "process-restart"
+  | "action-list"
+  | "action-run"
   | "attachment-prepare"
   | "attachment-discard"
   | "attachment-send"
@@ -287,6 +292,11 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
   t3_thread_organize: tool(["Organize", "Organizing", "Organized", "a thread"], "thread-organize"),
   t3_thread_update: tool(["Update", "Updating", "Updated", "T3 thread metadata"], "thread-update"),
   t3_worktree_list: tool(["List", "Listing", "Listed", "workspace branches"], "worktree-list"),
+  t3_process_list: tool(["List", "Listing", "Listed", "running processes"], "process-list"),
+  t3_process_stop: tool(["Stop", "Stopping", "Stopped", "a process"], "process-stop"),
+  t3_process_restart: tool(["Restart", "Restarting", "Restarted", "a process"], "process-restart"),
+  t3_project_actions_list: tool(["List", "Listing", "Listed", "project actions"], "action-list"),
+  t3_project_action_run: tool(["Run", "Running", "Ran", "a project action"], "action-run"),
   t3_preview_list: tool(["List", "Listing", "Listed", "preview tabs"], "browser", "browser"),
   t3_preview_close: tool(["Close", "Closing", "Closed", "a preview tab"], "browser", "browser"),
   t3_environment_read: tool(

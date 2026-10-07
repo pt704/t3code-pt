@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ProcessesRouteImport } from './routes/processes'
 import { Route as PairRouteImport } from './routes/pair'
 import { Route as ConnectAgentRouteImport } from './routes/connect-agent'
 import { Route as ConnectRouteImport } from './routes/connect'
@@ -49,6 +50,11 @@ const UsageRoute = UsageRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProcessesRoute = ProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PairRoute = PairRouteImport.update({
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/connect': typeof ConnectRoute
   '/connect-agent': typeof ConnectAgentRoute
   '/pair': typeof PairRoute
+  '/processes': typeof ProcessesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/connect': typeof ConnectRoute
   '/connect-agent': typeof ConnectAgentRoute
   '/pair': typeof PairRoute
+  '/processes': typeof ProcessesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/connect': typeof ConnectRoute
   '/connect-agent': typeof ConnectAgentRoute
   '/pair': typeof PairRoute
+  '/processes': typeof ProcessesRoute
   '/settings': typeof SettingsRouteWithChildren
   '/usage': typeof UsageRoute
   '/welcome': typeof WelcomeRoute
@@ -258,6 +267,7 @@ export interface FileRouteTypes {
     | '/connect'
     | '/connect-agent'
     | '/pair'
+    | '/processes'
     | '/settings'
     | '/usage'
     | '/welcome'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/connect'
     | '/connect-agent'
     | '/pair'
+    | '/processes'
     | '/settings'
     | '/usage'
     | '/welcome'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/connect'
     | '/connect-agent'
     | '/pair'
+    | '/processes'
     | '/settings'
     | '/usage'
     | '/welcome'
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   ConnectRoute: typeof ConnectRoute
   ConnectAgentRoute: typeof ConnectAgentRoute
   PairRoute: typeof PairRoute
+  ProcessesRoute: typeof ProcessesRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   UsageRoute: typeof UsageRoute
   WelcomeRoute: typeof WelcomeRoute
@@ -368,6 +381,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/processes': {
+      id: '/processes'
+      path: '/processes'
+      fullPath: '/processes'
+      preLoaderRoute: typeof ProcessesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pair': {
@@ -593,6 +613,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConnectRoute: ConnectRoute,
   ConnectAgentRoute: ConnectAgentRoute,
   PairRoute: PairRoute,
+  ProcessesRoute: ProcessesRoute,
   SettingsRoute: SettingsRouteWithChildren,
   UsageRoute: UsageRoute,
   WelcomeRoute: WelcomeRoute,

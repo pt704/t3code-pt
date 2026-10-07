@@ -15,6 +15,7 @@
 - [Visual replies](./user/html-renders.md)
 - [Import browser sessions](./user/browser-import.md)
 - [Devices](./user/devices.md)
+- [Processes and project actions](./user/processes.md)
 - [Usage and limits](./user/usage.md)
 - [Product usage data](./user/telemetry.md)
 - [Remote access](./user/remote-access.md)

@@ -49,6 +49,7 @@ import * as Option from "effect/Option";
 import {
   ArrowLeftIcon,
   ChartNoAxesColumnIcon,
+  ActivityIcon,
   CheckIcon,
   ChevronRightIcon,
   CornerLeftUpIcon,
@@ -562,6 +563,13 @@ export function CommandPalette({ children }: { children: ReactNode }) {
           themeHalves,
           initialAppearance: resolvedTheme,
         });
+        return;
+      }
+      if (command === "processes.open") {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        void navigate({ to: "/processes" });
         return;
       }
       if (command === "usage.open") {
@@ -2246,6 +2254,27 @@ function OpenCommandPaletteDialog(props: {
       },
     });
   }
+
+  actionItems.push({
+    kind: "action",
+    value: "action:processes",
+    searchTerms: [
+      "processes",
+      "running",
+      "servers",
+      "dev server",
+      "ports",
+      "kill",
+      "stop",
+      "actions",
+    ],
+    title: "Open processes",
+    icon: <ActivityIcon className={ITEM_ICON_CLASS} />,
+    shortcutCommand: "processes.open",
+    run: async () => {
+      await navigate({ to: "/processes" });
+    },
+  });
 
   actionItems.push({
     kind: "action",
