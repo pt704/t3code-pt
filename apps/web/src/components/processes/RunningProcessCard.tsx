@@ -1,5 +1,6 @@
 import type { EnvironmentId, TrackedProcess } from "@t3tools/contracts";
 import {
+  AppWindowIcon,
   BotIcon,
   CircleAlertIcon,
   GitBranchIcon,
@@ -16,6 +17,7 @@ import type { EnvironmentProject } from "@t3tools/client-runtime/state/models";
 import { ProjectFavicon } from "../ProjectFavicon";
 import { Hint } from "./Hint";
 import { formatElapsed, isQuietProcess, processTitle } from "./processesPage.logic";
+import { ProgramIcon, programTextColor } from "./ProgramIcon";
 import { ProcessThreadLink } from "./ProcessThreadLink";
 
 interface OriginPresentation {
@@ -59,7 +61,13 @@ export function RunningProcessCard(props: {
   const { entry, project } = props;
   const origin = originPresentation(entry);
   const quiet = isQuietProcess(entry, props.now);
+  // The status names what runs (Claude Code, Vite, PostgreSQL…); who started
+  // it moves to a small icon on the bottom line. Unrecognized processes keep
+  // their origin as the status.
+  const program = quiet ? null : entry.program;
   const StatusIcon = quiet ? CircleAlertIcon : origin.icon;
+  const OriginIcon = origin.icon;
+  const programColor = program ? programTextColor(program) : null;
   return (
     <li className="list-none py-0.5">
       <div
@@ -87,13 +95,18 @@ export function RunningProcessCard(props: {
             <span
               className={cn(
                 "flex shrink-0 items-center gap-1 text-xs font-medium transition-opacity group-hover/process-card:opacity-0 group-focus-within/process-card:opacity-0",
-                quiet ? "text-warning" : origin.className,
+                quiet ? "text-warning" : (programColor?.className ?? origin.className),
               )}
+              style={programColor?.style}
             >
-              <StatusIcon className="size-3.5" />
+              {program ? (
+                <ProgramIcon program={program} className="size-3.5" />
+              ) : (
+                <StatusIcon className="size-3.5" />
+              )}
               {quiet
                 ? `Quiet ${formatElapsed(entry.lastOutputAt ?? entry.startedAt, props.now)}`
-                : origin.label}
+                : (program?.label ?? origin.label)}
             </span>
             <span className="pointer-events-none absolute top-1.5 right-1.5 flex items-center opacity-0 transition-opacity group-hover/process-card:pointer-events-auto group-hover/process-card:opacity-100 group-focus-within/process-card:pointer-events-auto group-focus-within/process-card:opacity-100">
               {entry.canRestart ? (
@@ -124,6 +137,13 @@ export function RunningProcessCard(props: {
             </span>
           </div>
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-secondary-label">
+            {entry.program !== null || quiet ? (
+              <Hint label={origin.label}>
+                <span className={cn("flex shrink-0 items-center", origin.className)}>
+                  <OriginIcon className="size-3" aria-label={origin.label} />
+                </span>
+              </Hint>
+            ) : null}
             {entry.branch ? (
               <span className="flex min-w-0 items-center gap-1 text-muted-foreground/70">
                 <GitBranchIcon className="size-3 shrink-0" />
@@ -138,7 +158,15 @@ export function RunningProcessCard(props: {
             <span className="shrink-0 tabular-nums">
               {formatElapsed(entry.startedAt, props.now)}
             </span>
-            <span className="ml-auto flex min-w-0 items-center">
+            <span className="ml-auto flex min-w-0 items-center gap-1.5">
+              {entry.hostApp ? (
+                <Hint label={`Running in ${entry.hostApp}`}>
+                  <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+                    <AppWindowIcon className="size-3 shrink-0" />
+                    <span className="max-w-32 truncate">{entry.hostApp}</span>
+                  </span>
+                </Hint>
+              ) : null}
               <ProcessThreadLink environmentId={props.environmentId} entry={entry} compact />
             </span>
           </div>

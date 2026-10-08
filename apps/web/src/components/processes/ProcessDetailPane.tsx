@@ -10,6 +10,7 @@ import {
 import { DEFAULT_RESOLVED_KEYBINDINGS } from "@t3tools/shared/keybindings";
 import * as Schema from "effect/Schema";
 import {
+  AppWindowIcon,
   ArrowLeftIcon,
   GitBranchIcon,
   GlobeIcon,
@@ -161,6 +162,12 @@ export function ProcessDetailPane(props: {
             <span className="tabular-nums">up {formatElapsed(entry.startedAt, props.now)}</span>
             <span className="tabular-nums">{entry.cpuPercent.toFixed(0)}% CPU</span>
             <span className="tabular-nums">{formatMemory(entry.memoryBytes)}</span>
+            {entry.hostApp ? (
+              <span className="flex items-center gap-1">
+                <AppWindowIcon className="size-3" />
+                Running in {entry.hostApp}
+              </span>
+            ) : null}
             {entry.startedBy?.kind === "user" ? (
               <span className="flex items-center gap-1">
                 <UserIcon className="size-3" />

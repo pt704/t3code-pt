@@ -5,7 +5,9 @@
  * then {@link classifyProcesses} turns the flat table into rows: one per
  * command a user or agent started, with its whole subtree folded in.
  */
-import type { ProcessListener, ProcessOrigin } from "@t3tools/contracts";
+import type { ProcessListener, ProcessOrigin, RecognizedProgram } from "@t3tools/contracts";
+
+import { recognizeProgram } from "./programRecognition.ts";
 
 export interface ProcessTableRow {
   readonly pid: number;
@@ -31,6 +33,9 @@ export interface ClassifiedProcess {
   readonly name: string;
   readonly command: string;
   readonly cwd: string | null;
+  readonly program: RecognizedProgram | null;
+  /** The macOS app an external process runs under, e.g. iTerm2 or another T3 Code. */
+  readonly hostApp: string | null;
   readonly pids: ReadonlyArray<number>;
   readonly listeners: ReadonlyArray<ProcessListener>;
   readonly cpuPercent: number;
@@ -142,8 +147,15 @@ const isIgnored = (args: string) => {
 
 // Installed desktop apps and their helpers (editors, chat apps). Bundles
 // elsewhere, such as the Command Line Tools' Python.app, are ordinary commands.
-const isInstalledApp = (args: string) =>
-  /^(\/System)?(\/Users\/[^/]+)?\/Applications\/.*?\.app\/Contents\//.test(args);
+const INSTALLED_APP =
+  /^(?:\/System)?(?:\/Users\/[^/]+)?\/Applications\/(?:[^/]+\/)*?([^/]+)\.app\/Contents\//;
+
+const isInstalledApp = (args: string) => INSTALLED_APP.test(args);
+
+/** `T3 Code (Nightly)` for `/Applications/T3 Code (Nightly).app/Contents/MacOS/…`; the outermost bundle wins over helper apps inside it. */
+function installedAppName(args: string): string | null {
+  return INSTALLED_APP.exec(args)?.[1] ?? null;
+}
 
 /**
  * The command an agent asked for, without the shell wrapper around it.
@@ -203,6 +215,20 @@ export function classifyProcesses(input: ClassifyInput): ReadonlyArray<Classifie
   const claimed = new Set<number>();
   const rows: ClassifiedProcess[] = [];
 
+  /** The nearest installed app among a process's ancestors. */
+  const hostAppOf = (pid: number): string | null => {
+    const seen = new Set<number>();
+    for (let current = byPid.get(pid)?.ppid; current !== undefined && !seen.has(current);) {
+      seen.add(current);
+      const row = byPid.get(current);
+      if (!row) return null;
+      const name = installedAppName(row.args);
+      if (name) return name;
+      current = row.ppid;
+    }
+    return null;
+  };
+
   const makeRow = (
     rootPid: number,
     pids: ReadonlyArray<number>,
@@ -238,6 +264,17 @@ export function classifyProcesses(input: ClassifyInput): ReadonlyArray<Classifie
       name: processName(command),
       command,
       cwd,
+      program: recognizeProgram({
+        commands: pids.flatMap((pid) => {
+          const args = byPid.get(pid)?.args;
+          return args === undefined ? [] : [args];
+        }),
+        listeningCommands: pids.flatMap((pid) => {
+          const args = byPid.get(pid)?.args;
+          return args !== undefined && input.listenersByPid.has(pid) ? [args] : [];
+        }),
+      }),
+      hostApp: origin === "external" ? hostAppOf(rootPid) : null,
       pids,
       listeners,
       cpuPercent: Math.round(cpuPercent * 10) / 10,

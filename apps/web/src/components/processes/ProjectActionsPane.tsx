@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { resolveProjectScripts } from "@t3tools/shared/projectScripts";
+
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { cn } from "../../lib/utils";
 import { useProjects, useThreadShells } from "../../state/entities";
@@ -30,7 +32,6 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { ScrollArea } from "../ui/scroll-area";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
-import { Skeleton } from "../ui/skeleton";
 import { Hint } from "./Hint";
 import { folderName } from "./processesPage.logic";
 
@@ -182,6 +183,23 @@ function ProjectActionsSection(props: {
   const serverConfig = environments.find(
     (entry) => entry.environmentId === environmentId,
   )?.serverConfig;
+  // Saved actions are already in this client's settings, so they show at once;
+  // only discovery has to wait for the server to read the repository.
+  const savedFromSettings = useMemo(
+    (): ReadonlyArray<ProjectAction> =>
+      serverConfig
+        ? resolveProjectScripts(serverConfig.settings, project).map((script) => ({
+            id: script.id,
+            name: script.name,
+            command: script.command,
+            icon: script.icon,
+            source: "saved" as const,
+          }))
+        : [],
+    [project, serverConfig],
+  );
+  const saved = query.data?.saved ?? savedFromSettings;
+  const discovered = query.data?.discovered ?? null;
   const { saving, submit } = useProjectScriptSettings(
     serverConfig
       ? [
@@ -327,7 +345,7 @@ function ProjectActionsSection(props: {
   };
 
   // A collapsed list still says when one of its commands is running.
-  const discoveredIds = new Set((query.data?.discovered ?? []).map((action) => action.id));
+  const discoveredIds = new Set((discovered ?? []).map((action) => action.id));
   const discoveredRunning = props.processes.filter(
     (entry) =>
       entry.actionId !== null &&
@@ -358,46 +376,50 @@ function ProjectActionsSection(props: {
       ) : null}
       {query.error ? (
         <p className="px-2 text-sm text-destructive-foreground">{query.error}</p>
-      ) : query.data === null ? (
-        <div className="flex flex-col gap-2 px-2">
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-9 w-full" />
-        </div>
-      ) : query.data.saved.length === 0 && query.data.discovered.length === 0 ? (
+      ) : discovered !== null && saved.length === 0 && discovered.length === 0 ? (
         <p className="px-2 text-sm text-muted-foreground">
           No actions here yet. Add one in the project's settings, or add scripts to its
           package.json, Makefile, Procfile or t3.json.
         </p>
       ) : (
         <>
-          {query.data.saved.length > 0 ? (
-            <ul className="flex flex-col">{query.data.saved.map(renderAction)}</ul>
-          ) : null}
-          {query.data.discovered.length > 0 ? (
+          {saved.length > 0 ? <ul className="flex flex-col">{saved.map(renderAction)}</ul> : null}
+          {discovered === null || discovered.length > 0 ? (
             <div className="flex flex-col gap-1">
+              {/* Shown greyed out while discovery reads the repository, then fades in,
+                  so loading never swaps in differently shaped content. */}
               <button
                 type="button"
                 aria-expanded={discoveredOpen}
+                aria-busy={discovered === null}
+                disabled={discovered === null}
                 onClick={() =>
                   setExpandedDiscovered({ ...expandedDiscovered, [discoveredKey]: !discoveredOpen })
                 }
-                className="flex h-7 cursor-pointer items-center gap-1.5 self-start rounded-md px-2 text-xs font-medium text-secondary-label hover:bg-accent/60 hover:text-foreground"
+                className={cn(
+                  "flex h-7 cursor-pointer items-center gap-1.5 self-start rounded-md px-2 text-xs font-medium text-secondary-label transition-opacity duration-300 hover:bg-accent/60 hover:text-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-secondary-label",
+                )}
               >
                 <ChevronRightIcon
                   className={cn(
                     "-ml-0.5 size-3 shrink-0 text-muted-foreground/70 transition-transform duration-150",
-                    discoveredOpen && "rotate-90",
+                    discoveredOpen && discovered !== null && "rotate-90",
                   )}
                 />
-                <SparklesIcon className="size-3.5 text-info" />
+                <SparklesIcon
+                  className={cn(
+                    "size-3.5 transition-colors duration-300",
+                    discovered === null ? "text-muted-foreground" : "text-info",
+                  )}
+                />
                 Discovered in this checkout
-                <span className="text-muted-foreground tabular-nums">
-                  {query.data.discovered.length}
-                </span>
+                {discovered !== null ? (
+                  <span className="text-muted-foreground tabular-nums">{discovered.length}</span>
+                ) : null}
                 {discoveredRunning > 0 ? <RunningDot count={discoveredRunning} /> : null}
               </button>
-              {discoveredOpen ? (
-                <ul className="flex flex-col">{query.data.discovered.map(renderAction)}</ul>
+              {discoveredOpen && discovered !== null ? (
+                <ul className="flex flex-col">{discovered.map(renderAction)}</ul>
               ) : null}
             </div>
           ) : null}

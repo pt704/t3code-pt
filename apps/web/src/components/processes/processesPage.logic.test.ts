@@ -17,6 +17,8 @@ const process = (overrides: Partial<TrackedProcess>): TrackedProcess => ({
   name: "node",
   command: "node server.js",
   cwd: "/work/app",
+  program: null,
+  hostApp: null,
   startedAt: new Date(NOW - 60_000).toISOString(),
   origin: "external",
   terminal: null,

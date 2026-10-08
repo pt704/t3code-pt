@@ -44,6 +44,19 @@ export const ProcessStarter = Schema.Struct({
 });
 export type ProcessStarter = typeof ProcessStarter.Type;
 
+/**
+ * What a process tree runs, when T3 Code recognizes it: a coding agent such as
+ * Claude Code, a dev server or tool such as Vite, or a database.
+ */
+export const RecognizedProgram = Schema.Struct({
+  kind: Schema.Literals(["agent", "server", "database"]),
+  id: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  /** The T3 Code provider whose icon this agent shares, when T3 Code supports it. */
+  driverKind: Schema.NullOr(TrimmedNonEmptyString),
+});
+export type RecognizedProgram = typeof RecognizedProgram.Type;
+
 export const TrackedProcess = Schema.Struct({
   /** `<pid>@<startedAtMs>`; stays stable for the life of the process and never matches a reused pid. */
   id: TrimmedNonEmptyString,
@@ -51,6 +64,9 @@ export const TrackedProcess = Schema.Struct({
   name: TrimmedNonEmptyString,
   command: Schema.String,
   cwd: Schema.NullOr(TrimmedNonEmptyString),
+  program: Schema.NullOr(RecognizedProgram),
+  /** The desktop app an external process runs under, such as iTerm2 or another T3 Code (macOS). */
+  hostApp: Schema.NullOr(TrimmedNonEmptyString),
   startedAt: IsoDateTime,
   origin: ProcessOrigin,
   terminal: Schema.NullOr(ProcessTerminalRef),

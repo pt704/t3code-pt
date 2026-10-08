@@ -17,6 +17,10 @@ came from. It finds:
 - processes started elsewhere, such as another terminal app, that run inside one of your
   project folders or listen on a port.
 
+Processes started elsewhere are grouped under **External**, collapsed until you open it. Coding
+agents such as Claude Code, Codex, or Gemini CLI are labeled by name, and the collapsed section
+shows which ones are running.
+
 Select a card to see its live output on the right; **Actions** takes you back. A terminal
 command with no output for ten minutes is marked **Quiet**, which often means it is stuck or
 waiting for input. On the machine you use T3 Code on, select a port to open it in your browser.

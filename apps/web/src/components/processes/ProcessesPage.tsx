@@ -1,10 +1,13 @@
 import { autoAnimate } from "@formkit/auto-animate";
 import type { EnvironmentId, ProjectActionRun, TrackedProcess } from "@t3tools/contracts";
-import { ActivityIcon } from "lucide-react";
+import * as Schema from "effect/Schema";
+import { ActivityIcon, ChevronRightIcon, ServerIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { isElectron } from "../../env";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { useEscapeToGoBack } from "../../hooks/useNavigateBack";
+import { cn } from "../../lib/utils";
 import { readLocalApi } from "../../localApi";
 import { useProjects } from "../../state/entities";
 import { useEnvironments, usePrimaryEnvironmentId } from "../../state/environments";
@@ -15,7 +18,6 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "..
 import { ScrollArea } from "../ui/scroll-area";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "../ui/select";
 import { SidebarInset } from "../ui/sidebar";
-import { Skeleton } from "../ui/skeleton";
 import {
   WorkspaceBreadcrumb,
   WorkspaceBreadcrumbItem,
@@ -24,8 +26,11 @@ import {
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { ProcessDetailPane, type ProcessSelection } from "./ProcessDetailPane";
 import { processTitle, sortRunningProcesses } from "./processesPage.logic";
+import { ProgramIcon } from "./ProgramIcon";
 import { ProjectActionsPane } from "./ProjectActionsPane";
 import { RunningProcessCard } from "./RunningProcessCard";
+
+const EXTERNAL_EXPANDED_STORAGE_KEY = "t3code:processes:external-expanded";
 
 // The same enter, leave and reorder motion as the sidebar's thread lists.
 const LIST_ANIMATION_OPTIONS = { duration: 180, easing: "ease-out" } as const;
@@ -80,6 +85,22 @@ export function ProcessesPage() {
     environmentId === null ? null : processesEnvironment.list({ environmentId, input: {} }),
   );
   const processes = useMemo(() => sortRunningProcesses(query.data?.processes ?? []), [query.data]);
+  // Processes T3 Code started come first; anything started elsewhere folds
+  // into its own section, collapsed until asked for.
+  const startedInT3 = processes.filter((entry) => entry.origin !== "external");
+  const external = processes.filter((entry) => entry.origin === "external");
+  // The collapsed header still says which agents and servers are in there.
+  const externalPrograms = external.flatMap((entry) => (entry.program ? [entry.program] : []));
+  const externalAgentPrograms = externalPrograms.filter((program) => program.kind === "agent");
+  const externalAgents = [
+    ...new Map(externalAgentPrograms.map((program) => [program.id, program])).values(),
+  ];
+  const externalServerCount = externalPrograms.length - externalAgentPrograms.length;
+  const [externalOpen, setExternalOpen] = useLocalStorage(
+    EXTERNAL_EXPANDED_STORAGE_KEY,
+    false,
+    Schema.Boolean,
+  );
   const allProjects = useProjects();
   const projectFor = (projectId: string | null) =>
     allProjects.find(
@@ -192,20 +213,14 @@ export function ProcessesPage() {
                 <h2 className="text-xs font-medium text-secondary-label">Running</h2>
                 {query.data ? (
                   <span className="text-xs text-muted-foreground tabular-nums">
-                    {processes.length}
+                    {startedInT3.length}
                   </span>
                 ) : null}
               </div>
               <ScrollArea className="min-h-0 flex-1">
                 {query.error ? (
                   <p className="px-4 py-2 text-sm text-destructive-foreground">{query.error}</p>
-                ) : query.data === null ? (
-                  <div className="flex flex-col gap-1 px-2 py-1">
-                    {[0, 1, 2].map((index) => (
-                      <Skeleton key={index} className="h-20 w-full" />
-                    ))}
-                  </div>
-                ) : (
+                ) : query.data === null ? null : (
                   <>
                     {processes.length === 0 ? (
                       <Empty size="compact">
@@ -222,8 +237,8 @@ export function ProcessesPage() {
                       </Empty>
                     ) : null}
                     {/* Stays mounted while empty so the first process to start animates in too. */}
-                    <ul ref={attachListAnimation} className="px-2 pb-3">
-                      {processes.map((entry) => (
+                    <ul ref={attachListAnimation} className="px-2 pb-1">
+                      {startedInT3.map((entry) => (
                         <RunningProcessCard
                           key={entry.id}
                           environmentId={environmentId}
@@ -238,6 +253,71 @@ export function ProcessesPage() {
                         />
                       ))}
                     </ul>
+                    {external.length > 0 ? (
+                      <div className="px-2 pb-3">
+                        <button
+                          type="button"
+                          aria-expanded={externalOpen}
+                          onClick={() => setExternalOpen(!externalOpen)}
+                          className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-xs font-medium text-secondary-label hover:bg-accent/60 hover:text-foreground"
+                        >
+                          <ChevronRightIcon
+                            className={cn(
+                              "-ml-0.5 size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-150",
+                              externalOpen && "rotate-90",
+                            )}
+                          />
+                          External
+                          <span className="text-muted-foreground tabular-nums">
+                            {external.length}
+                          </span>
+                          <span className="ml-auto flex items-center gap-2.5">
+                            {externalAgents.length > 0 ? (
+                              <span className="flex items-center gap-1.5 text-info">
+                                <span className="flex items-center -space-x-0.5">
+                                  {externalAgents.slice(0, 4).map((program) => (
+                                    <ProgramIcon
+                                      key={program.id}
+                                      program={program}
+                                      className="size-3.5"
+                                    />
+                                  ))}
+                                </span>
+                                {externalAgentPrograms.length === 1
+                                  ? "1 agent"
+                                  : `${externalAgentPrograms.length} agents`}
+                              </span>
+                            ) : null}
+                            {externalServerCount > 0 ? (
+                              <span className="flex items-center gap-1 text-success">
+                                <ServerIcon className="size-3.5" />
+                                {externalServerCount === 1
+                                  ? "1 server"
+                                  : `${externalServerCount} servers`}
+                              </span>
+                            ) : null}
+                          </span>
+                        </button>
+                        {externalOpen ? (
+                          <ul ref={attachListAnimation}>
+                            {external.map((entry) => (
+                              <RunningProcessCard
+                                key={entry.id}
+                                environmentId={environmentId}
+                                entry={entry}
+                                project={projectFor(entry.projectId)}
+                                selected={selectedEntry?.id === entry.id}
+                                now={now}
+                                pending={pendingIds.has(entry.id)}
+                                onSelect={() => setSelection(selectionForProcess(entry))}
+                                onStop={() => void runOnProcess(entry, "stop")}
+                                onRestart={() => void runOnProcess(entry, "restart")}
+                              />
+                            ))}
+                          </ul>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </>
                 )}
                 {query.data && !query.data.externalDiscovery ? (

@@ -209,6 +209,35 @@ describe("classifyProcesses", () => {
     expect(rows[0]!.pids.toSorted()).toEqual([402, 403]);
   });
 
+  it("names the app an external process runs under", () => {
+    const rows = classify({
+      table: [
+        row(SERVER, 1, "node server.js"),
+        row(
+          600,
+          1,
+          "/Applications/T3 Code (Nightly).app/Contents/MacOS/T3 Code (Nightly) --require boot.cjs",
+        ),
+        row(601, 600, "claude --output-format stream-json"),
+        row(700, 1, "/Applications/iTerm.app/Contents/MacOS/iTerm2"),
+        row(701, 700, "/usr/bin/login -fp me"),
+        row(702, 701, "-zsh"),
+        row(703, 702, "pnpm run dev"),
+        row(800, 1, "pnpm run dev"),
+      ],
+      cwdByPid: new Map([
+        [601, "/work/app"],
+        [703, "/work/app"],
+        [800, "/work/app"],
+      ]),
+    });
+    expect(rows.map((entry) => [entry.rootPid, entry.hostApp])).toEqual([
+      [601, "T3 Code (Nightly)"],
+      [703, "iTerm"],
+      [800, null],
+    ]);
+  });
+
   it("never reports the server's own process tree as external", () => {
     const rows = classify({
       table: [

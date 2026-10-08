@@ -338,6 +338,8 @@ const make = Effect.gen(function* () {
       name: row.name,
       command: row.command.slice(0, 2_000),
       cwd: row.cwd,
+      program: row.program,
+      hostApp: row.hostApp,
       startedAt: isoFromMillis(row.startedAtMs),
       origin: action === null ? row.origin : "action",
       terminal: row.terminal,
