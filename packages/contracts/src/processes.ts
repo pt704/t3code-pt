@@ -71,6 +71,8 @@ export const TrackedProcess = Schema.Struct({
   origin: ProcessOrigin,
   terminal: Schema.NullOr(ProcessTerminalRef),
   actionId: Schema.NullOr(TrimmedNonEmptyString),
+  /** The action's name when T3 Code started it; unknown after a server restart. */
+  actionName: Schema.NullOr(TrimmedNonEmptyString),
   /** Known for project actions started since the server last restarted. */
   startedBy: Schema.NullOr(ProcessStarter),
   projectId: Schema.NullOr(ProjectId),

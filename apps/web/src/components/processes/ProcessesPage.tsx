@@ -143,6 +143,15 @@ export function ProcessesPage() {
             )
           : undefined) ??
         null);
+  // Its action run, which the server reports before the process shows up in a scan.
+  const selectedRun =
+    selection?.terminal == null
+      ? undefined
+      : query.data?.actionRuns.find(
+          (run) =>
+            run.terminal.threadId === selection.terminal?.threadId &&
+            run.terminal.terminalId === selection.terminal?.terminalId,
+        );
   const selectRun = (run: ProjectActionRun, title: string) =>
     setSelection({
       processId: null,
@@ -333,6 +342,13 @@ export function ProcessesPage() {
                   environmentId={environmentId}
                   selection={selection}
                   entry={selectedEntry}
+                  runState={
+                    selectedRun === undefined
+                      ? "starting"
+                      : selectedRun.running
+                        ? "running"
+                        : "finished"
+                  }
                   project={projectFor(
                     selectedEntry?.projectId ??
                       (selection.terminal?.threadId.startsWith("project-actions:")

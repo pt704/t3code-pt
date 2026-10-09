@@ -209,7 +209,10 @@ const baseName = (word: string) =>
 /** The program a command runs: its executable, or the script a runner like `node` was given. */
 function programOf(command: string): { readonly runner: string; readonly program: string } {
   const words = command.split(/\s+/).filter((word) => word.length > 0);
-  const runner = baseName(words[0] ?? "").replace(/^-/, "");
+  // macOS runs `python3` as `…/Python.app/Contents/MacOS/Python`.
+  const runner = baseName(words[0] ?? "")
+    .replace(/^-/, "")
+    .toLowerCase();
   if (!RUNNERS.has(runner)) return { runner, program: runner };
   // `node --inspect server.js`, `python -m http.server`: skip flags to the script or module.
   const moduleIndex = words.indexOf("-m");

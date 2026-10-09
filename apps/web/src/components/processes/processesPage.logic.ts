@@ -11,12 +11,23 @@ export function sortRunningProcesses(
 }
 
 /** A project action's name (`dev` for `package.json:dev`), else the command line. */
-export function processTitle(entry: Pick<TrackedProcess, "actionId" | "command">): string {
-  if (entry.actionId === null) return entry.command;
+export function processTitle(
+  entry: Pick<TrackedProcess, "actionId" | "actionName" | "command" | "name">,
+): string {
+  if (entry.actionId === null) return shortCommand(entry);
+  if (entry.actionName !== null) return entry.actionName;
   const separator = entry.actionId.indexOf(":");
   return separator > 0 && separator < entry.actionId.length - 1
     ? entry.actionId.slice(separator + 1)
     : entry.actionId;
+}
+
+/** A command with its executable's directory dropped: `/usr/bin/python3 -m http.server` → `python3 -m http.server`. */
+function shortCommand(entry: Pick<TrackedProcess, "command" | "name">): string {
+  const executable = entry.command.split(/\s+/, 1)[0] ?? "";
+  return executable.startsWith("/") && executable.endsWith(`/${entry.name}`)
+    ? entry.name + entry.command.slice(executable.length)
+    : entry.command;
 }
 
 /** True when a T3 terminal command has been silent for a long time. */

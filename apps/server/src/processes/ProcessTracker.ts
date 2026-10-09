@@ -200,7 +200,10 @@ const make = Effect.gen(function* () {
   const terminalSummaries = new Map<string, TerminalSummary>();
   // Who started each action terminal's current command, and when. In memory:
   // after a server restart the starter is unknown.
-  const actionStarts = new Map<string, { startedBy: ProcessStarter; atMs: number }>();
+  const actionStarts = new Map<
+    string,
+    { startedBy: ProcessStarter; atMs: number; actionName: string }
+  >();
   const lastOutputAt = new Map<string, number>();
   const unsubscribeMetadata = yield* terminals.subscribeMetadata((event) =>
     Effect.sync(() => {
@@ -339,7 +342,8 @@ const make = Effect.gen(function* () {
     const key =
       row.terminal === null ? null : terminalKey(row.terminal.threadId, row.terminal.terminalId);
     const outputAt = key === null ? undefined : lastOutputAt.get(key);
-    const startedBy = key === null ? null : (actionStarts.get(key)?.startedBy ?? null);
+    const start = key === null ? undefined : actionStarts.get(key);
+    const startedBy = start?.startedBy ?? null;
     const threadIds =
       row.terminal !== null && action === null
         ? [ThreadId.make(row.terminal.threadId)]
@@ -358,6 +362,7 @@ const make = Effect.gen(function* () {
       origin: action === null ? row.origin : "action",
       terminal: row.terminal,
       actionId: action?.actionId ?? null,
+      actionName: action === null ? null : (start?.actionName ?? null),
       startedBy,
       projectId: folder?.projectId ?? null,
       workspaceRoot: folder?.root ?? null,
@@ -372,17 +377,23 @@ const make = Effect.gen(function* () {
     };
   };
 
-  const actionRuns = (): ReadonlyArray<ProjectActionRun> =>
+  const actionRuns = (nowMs: number): ReadonlyArray<ProjectActionRun> =>
     [...terminalSummaries.values()].flatMap((terminal) => {
       const action = parseActionTerminal(terminal);
       if (action === null) return [];
+      const start = actionStarts.get(terminalKey(terminal.threadId, terminal.terminalId));
       return [
         {
           projectId: action.projectId as ProjectId,
           actionId: action.actionId,
           workspaceRoot: terminal.worktreePath ?? terminal.cwd,
           terminal: { threadId: terminal.threadId, terminalId: terminal.terminalId },
-          running: terminal.status === "running" && terminal.hasRunningSubprocess,
+          // A command just handed to the shell counts as running before the
+          // terminal reports its subprocess, so a new run never reads "Finished".
+          running:
+            terminal.status === "running" &&
+            (terminal.hasRunningSubprocess ||
+              (start !== undefined && nowMs - start.atMs < ACTION_START_GRACE_MS)),
           updatedAt: terminal.updatedAt,
         },
       ];
@@ -394,7 +405,7 @@ const make = Effect.gen(function* () {
       // No cheap process table here: list running T3 terminals only.
       return {
         processes: [],
-        actionRuns: actionRuns(),
+        actionRuns: actionRuns(nowMs),
         externalDiscovery: false,
         scannedAt: isoFromMillis(nowMs),
       } satisfies TrackedProcessList;
@@ -446,7 +457,7 @@ const make = Effect.gen(function* () {
       processes: classified
         .map((row) => toTrackedProcess(row, folders, branches))
         .toSorted((left, right) => left.startedAt.localeCompare(right.startedAt)),
-      actionRuns: actionRuns(),
+      actionRuns: actionRuns(nowMs),
       externalDiscovery: true,
       scannedAt: isoFromMillis(nowMs),
     } satisfies TrackedProcessList;
@@ -673,6 +684,7 @@ const make = Effect.gen(function* () {
       const terminal = target ?? freeActionTerminal(project.id, action.id, root, nowMs);
       actionStarts.set(terminalKey(terminal.threadId, terminal.terminalId), {
         startedBy,
+        actionName: action.name,
         atMs: nowMs,
       });
       yield* terminals

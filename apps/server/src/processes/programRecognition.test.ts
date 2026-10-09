@@ -42,6 +42,9 @@ describe("recognizeProgram", () => {
     expect(recognize(["python3 -m http.server 8000"], ["python3 -m http.server 8000"])?.label).toBe(
       "Python server",
     );
+    const macPython =
+      "/Library/Python3.framework/Resources/Python.app/Contents/MacOS/Python -m http.server";
+    expect(recognize([macPython], [macPython])?.label).toBe("Python server");
     expect(recognize(["/opt/homebrew/opt/postgresql@16/bin/postgres -D /var/pg"])?.kind).toBe(
       "database",
     );

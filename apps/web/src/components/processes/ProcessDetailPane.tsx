@@ -53,8 +53,10 @@ function openUrl(url: string) {
 export function ProcessDetailPane(props: {
   environmentId: EnvironmentId;
   selection: ProcessSelection;
-  /** The live process, or null once it has exited. */
+  /** The live process, or null before a scan finds it and once it has exited. */
   entry: TrackedProcess | null;
+  /** The action run's state while `entry` is null: unknown until the server reports it. */
+  runState: "starting" | "running" | "finished";
   project: EnvironmentProject | null;
   localPorts: boolean;
   now: number;
@@ -95,7 +97,7 @@ export function ProcessDetailPane(props: {
           </span>
         ) : (
           <Badge variant="secondary" size="sm">
-            Finished
+            {props.runState === "finished" ? "Finished" : "Starting…"}
           </Badge>
         )}
         {entry?.listeners.map((listener) =>

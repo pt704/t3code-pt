@@ -23,6 +23,7 @@ const process = (overrides: Partial<TrackedProcess>): TrackedProcess => ({
   origin: "external",
   terminal: null,
   actionId: null,
+  actionName: null,
   startedBy: null,
   projectId: null,
   workspaceRoot: null,
@@ -47,9 +48,24 @@ describe("sortRunningProcesses", () => {
 
 describe("processTitle", () => {
   it("names discovered and saved actions by their action name", () => {
-    expect(processTitle({ actionId: "package.json:dev", command: "node vite" })).toBe("dev");
-    expect(processTitle({ actionId: "dev-server", command: "node vite" })).toBe("dev-server");
-    expect(processTitle({ actionId: null, command: "node vite" })).toBe("node vite");
+    const title = (entry: Partial<Parameters<typeof processTitle>[0]>) =>
+      processTitle({
+        actionId: null,
+        actionName: null,
+        command: "node vite",
+        name: "node",
+        ...entry,
+      });
+    expect(title({ actionId: "package.json:dev" })).toBe("dev");
+    expect(title({ actionId: "dev-server" })).toBe("dev-server");
+    expect(title({ actionId: "dev-2", actionName: "dev" })).toBe("dev");
+    expect(title({})).toBe("node vite");
+    expect(
+      title({
+        command: "/Library/Python.app/Contents/MacOS/Python -m http.server",
+        name: "Python",
+      }),
+    ).toBe("Python -m http.server");
   });
 });
 
