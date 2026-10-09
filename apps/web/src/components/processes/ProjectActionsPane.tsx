@@ -14,7 +14,7 @@ import {
   PlayIcon,
   SparklesIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { resolveProjectScripts } from "@t3tools/shared/projectScripts";
 
@@ -198,8 +198,23 @@ function ProjectActionsSection(props: {
         : [],
     [project, serverConfig],
   );
-  const saved = query.data?.saved ?? savedFromSettings;
-  const discovered = query.data?.discovered ?? null;
+  // Settings are live, so saves and deletes from anywhere (Settings, another
+  // client, an agent's MCP tools) show at once. Discovery drops saved commands
+  // on the server, so it is re-read when the saved list changes.
+  const saved = serverConfig ? savedFromSettings : (query.data?.saved ?? []);
+  const savedCommandsKey = saved.map((action) => action.command.trim()).join("\n");
+  const discovered = useMemo(() => {
+    if (!query.data) return null;
+    const savedCommands = new Set(savedCommandsKey.split("\n"));
+    return query.data.discovered.filter((action) => !savedCommands.has(action.command.trim()));
+  }, [query.data, savedCommandsKey]);
+  const refreshActions = query.refresh;
+  const discoveredForCommands = useRef(savedCommandsKey);
+  useEffect(() => {
+    if (discoveredForCommands.current === savedCommandsKey) return;
+    discoveredForCommands.current = savedCommandsKey;
+    refreshActions();
+  }, [refreshActions, savedCommandsKey]);
   const { saving, submit } = useProjectScriptSettings(
     serverConfig
       ? [
@@ -233,7 +248,7 @@ function ProjectActionsSection(props: {
   };
 
   const save = async (action: ProjectAction) => {
-    const result = await submit(null, {
+    await submit(null, {
       name: action.name,
       command: action.command,
       icon: action.icon,
@@ -244,7 +259,6 @@ function ProjectActionsSection(props: {
       previewUrl: null,
       autoOpenPreview: false,
     });
-    if (result._tag === "Success") query.refresh();
   };
 
   const renderAction = (action: ProjectAction) => {
