@@ -13,7 +13,7 @@ import {
   type ResolvedKeybindingsConfig,
   type ServerSettings,
 } from "@t3tools/contracts";
-import { resolveProjectScripts } from "@t3tools/shared/projectScripts";
+import { nextProjectScriptId, resolveProjectScripts } from "@t3tools/shared/projectScripts";
 import { clearProjectSettingsOverrides } from "@t3tools/shared/projectSettings";
 import * as Cause from "effect/Cause";
 import { AsyncResult } from "effect/reactivity";
@@ -27,7 +27,6 @@ import {
 import {
   buildProjectScript,
   commandForProjectScript,
-  nextProjectScriptId,
   releaseClaimedRoles,
 } from "../../projectScripts";
 import { useProjects } from "../../state/entities";

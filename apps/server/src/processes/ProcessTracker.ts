@@ -16,11 +16,14 @@ import {
   type ProcessStarter,
   type ProcessTerminalRef,
   type ProjectAction,
+  type ProjectActionDeleteInput,
   type ProjectActionList,
   type ProjectActionListInput,
   type ProjectActionRun,
   type ProjectActionRunInput,
+  type ProjectActionSaveInput,
   type ProjectId,
+  type ProjectScript,
   type ProcessesError,
   type TerminalSummary,
   type TrackedProcess,
@@ -57,6 +60,7 @@ import {
   procfileActions,
   withoutSaved,
 } from "./actionDiscovery.ts";
+import { upsertSavedAction } from "./savedActions.ts";
 import {
   classifyProcesses,
   parseLsofCwds,
@@ -91,6 +95,16 @@ export class ProcessTracker extends Context.Service<
       input: ProjectActionRunInput,
       startedBy: ProcessStarter,
     ) => Effect.Effect<ProcessTerminalRef, ProcessesError>;
+    /**
+     * Saves a new action for the project, or replaces a saved one. The first
+     * change to a project that inherits the environment's actions gives it
+     * its own copy, as editing them in Settings does.
+     */
+    readonly saveAction: (
+      input: ProjectActionSaveInput,
+    ) => Effect.Effect<ProjectAction, ProcessesError>;
+    /** Removes a saved action from the project. */
+    readonly deleteAction: (input: ProjectActionDeleteInput) => Effect.Effect<void, ProcessesError>;
   }
 >()("t3/processes/ProcessTracker") {}
 
@@ -703,7 +717,76 @@ const make = Effect.gen(function* () {
       );
     }).pipe(Effect.withSpan("ProcessTracker.restart"));
 
-  return ProcessTracker.of({ list, subscribe, stop, restart, listActions, runAction });
+  const savedActionsLock = yield* Semaphore.make(1);
+
+  /** Reads, edits and writes back a project's saved actions, one edit at a time. */
+  const editSavedActions = <A>(
+    projectId: ProjectId,
+    actionId: string,
+    operation: "save-action" | "delete-action",
+    edit: (
+      scripts: ReadonlyArray<ProjectScript>,
+      takenIds: ReadonlyArray<string>,
+    ) => { readonly scripts: ReadonlyArray<ProjectScript>; readonly result: A } | null,
+  ) =>
+    savedActionsLock.withPermits(1)(
+      Effect.gen(function* () {
+        const project = yield* projectOf(projectId, actionId);
+        const current = yield* settings.getSettings.pipe(
+          Effect.mapError((cause) => new ProcessOperationError({ operation, cause })),
+        );
+        const scripts = resolveProjectScripts(current, project);
+        const takenIds = [
+          ...current.defaultProjectScripts,
+          ...Object.values(current.projectSettingsOverrides).flatMap(
+            (entry) => entry.defaultProjectScripts ?? [],
+          ),
+          ...project.scripts,
+        ].map((script) => script.id);
+        const edited = edit(scripts, takenIds);
+        if (edited === null) return yield* new ProjectActionNotFoundError({ projectId, actionId });
+        yield* settings
+          .updateSettings({
+            projectSettingsOverrides: {
+              [project.id]: {
+                ...current.projectSettingsOverrides[project.id],
+                defaultProjectScripts: edited.scripts,
+              },
+            },
+          })
+          .pipe(Effect.mapError((cause) => new ProcessOperationError({ operation, cause })));
+        return edited.result;
+      }),
+    );
+
+  const saveAction: ProcessTracker["Service"]["saveAction"] = (input) =>
+    editSavedActions(input.projectId, input.actionId ?? "", "save-action", (scripts, takenIds) => {
+      const saved = upsertSavedAction(scripts, input, takenIds);
+      if (saved === null) return null;
+      const { id, name, command, icon } = saved.action;
+      return {
+        scripts: saved.scripts,
+        result: { id, name, command, icon, source: "saved" as const },
+      };
+    }).pipe(Effect.withSpan("ProcessTracker.saveAction"));
+
+  const deleteAction: ProcessTracker["Service"]["deleteAction"] = (input) =>
+    editSavedActions(input.projectId, input.actionId, "delete-action", (scripts) =>
+      scripts.some((script) => script.id === input.actionId)
+        ? { scripts: scripts.filter((script) => script.id !== input.actionId), result: undefined }
+        : null,
+    ).pipe(Effect.withSpan("ProcessTracker.deleteAction"));
+
+  return ProcessTracker.of({
+    list,
+    subscribe,
+    stop,
+    restart,
+    listActions,
+    runAction,
+    saveAction,
+    deleteAction,
+  });
 });
 
 export const layer = Layer.effect(ProcessTracker, make);

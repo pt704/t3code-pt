@@ -2,6 +2,7 @@ import { MAX_SCRIPT_ID_LENGTH } from "@t3tools/contracts";
 import { shortcutLabelForCommand } from "./keybindings";
 import { describe, expect, it } from "vite-plus/test";
 import {
+  nextProjectScriptId,
   projectScriptCwd,
   projectScriptRuntimeEnv,
   projectScriptMenuLabel,
@@ -12,7 +13,6 @@ import {
 import {
   buildProjectScript,
   commandForProjectScript,
-  nextProjectScriptId,
   primaryProjectScript,
   projectScriptIdFromCommand,
   releaseClaimedRoles,

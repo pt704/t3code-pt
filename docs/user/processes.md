@@ -21,7 +21,7 @@ Processes started elsewhere are grouped under **External**, collapsed until you 
 agents such as Claude Code, Codex, or Gemini CLI are labeled by name, and the collapsed section
 shows which ones are running.
 
-Select a card to see its live output on the right; **Actions** takes you back. A terminal
+Select a card to see its live output on the right; **All actions** or `Esc` takes you back. A terminal
 command with no output for ten minutes is marked **Quiet**, which often means it is stuck or
 waiting for input. On the machine you use T3 Code on, select a port to open it in your browser.
 
@@ -37,4 +37,6 @@ command in its own terminal for the chosen checkout. If the action is already ru
 project's actions.
 
 Agents can do the same through the T3 Code MCP tools `t3_process_list`, `t3_process_stop`,
-`t3_process_restart`, `t3_project_actions_list`, and `t3_project_action_run`.
+`t3_process_restart`, `t3_project_actions_list`, and `t3_project_action_run`. Agents in a
+full-access thread can also save and delete project actions with `t3_project_action_save` and
+`t3_project_action_delete`, so you can ask one to set up a project's actions for you.

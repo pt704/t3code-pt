@@ -152,6 +152,23 @@ export const ProjectActionRunInput = Schema.Struct({
 });
 export type ProjectActionRunInput = typeof ProjectActionRunInput.Type;
 
+export const ProjectActionSaveInput = Schema.Struct({
+  projectId: ProjectId,
+  /** A saved action to replace. Omit to save a new one. */
+  actionId: Schema.optional(TrimmedNonEmptyString),
+  name: TrimmedNonEmptyString,
+  command: TrimmedNonEmptyString,
+  /** Defaults to an icon guessed from the name. */
+  icon: Schema.optional(ProjectScriptIcon),
+});
+export type ProjectActionSaveInput = typeof ProjectActionSaveInput.Type;
+
+export const ProjectActionDeleteInput = Schema.Struct({
+  projectId: ProjectId,
+  actionId: TrimmedNonEmptyString,
+});
+export type ProjectActionDeleteInput = typeof ProjectActionDeleteInput.Type;
+
 export const TrackedProcessInput = Schema.Struct({
   processId: TrimmedNonEmptyString,
 });
@@ -196,7 +213,15 @@ export class ProjectActionWorkspaceError extends Schema.TaggedError<ProjectActio
 export class ProcessOperationError extends Schema.TaggedError<ProcessOperationError>()(
   "ProcessOperationError",
   {
-    operation: Schema.Literals(["scan", "stop", "restart", "run-action", "list-actions"]),
+    operation: Schema.Literals([
+      "scan",
+      "stop",
+      "restart",
+      "run-action",
+      "list-actions",
+      "save-action",
+      "delete-action",
+    ]),
     cause: Schema.Defect(),
   },
 ) {

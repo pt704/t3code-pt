@@ -57,4 +57,14 @@ export const layer = McpToolAccess.toLayer(ProcessesToolkit, {
         .pipe(Effect.mapError(toFailure));
     }),
   ),
+  t3_project_action_save: McpToolAccess.writesEnvironment((input) =>
+    tracker.pipe(
+      Effect.flatMap((service) => service.saveAction(input).pipe(Effect.mapError(toFailure))),
+    ),
+  ),
+  t3_project_action_delete: McpToolAccess.writesEnvironment((input) =>
+    tracker.pipe(
+      Effect.flatMap((service) => service.deleteAction(input).pipe(Effect.mapError(toFailure))),
+    ),
+  ),
 });

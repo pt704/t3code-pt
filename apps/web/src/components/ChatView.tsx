@@ -130,6 +130,7 @@ import {
   resolveSelectableModel,
 } from "@t3tools/shared/model";
 import {
+  nextProjectScriptId,
   projectScriptCwd,
   projectScriptRuntimeEnv,
   resolveProjectScripts,
@@ -319,7 +320,6 @@ import { type NewProjectScriptInput } from "./ProjectScriptsControl";
 import {
   buildProjectScript,
   commandForProjectScript,
-  nextProjectScriptId,
   projectScriptIdFromCommand,
   releaseClaimedRoles,
 } from "~/projectScripts";

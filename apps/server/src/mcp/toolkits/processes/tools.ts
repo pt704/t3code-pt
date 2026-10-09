@@ -1,9 +1,12 @@
 import {
   OrchestratorMcpFailure,
   ProcessTerminalRef,
+  ProjectAction,
+  ProjectActionDeleteInput,
   ProjectActionList,
   ProjectActionListInput,
   ProjectActionRunInput,
+  ProjectActionSaveInput,
   ProjectId,
   TrackedProcessInput,
   TrackedProcessList,
@@ -73,10 +76,27 @@ const ProjectActionRunTool = Tool.make("t3_project_action_run", {
   success: ProcessTerminalRef,
 }).annotate(Tool.Destructive, false);
 
+const ProjectActionSaveTool = Tool.make("t3_project_action_save", {
+  ...shared,
+  description:
+    "Save a project action: a named command the user can run from the Processes page, the chat header and Settings > Actions. Omit actionId to add one, for example to keep a command from t3_project_actions_list's discovered list; pass a saved action's id to rename it or change its command. Returns the saved action, whose id works with t3_project_action_run.",
+  parameters: ProjectActionSaveInput,
+  success: ProjectAction,
+}).annotate(Tool.Destructive, false);
+
+const ProjectActionDeleteTool = Tool.make("t3_project_action_delete", {
+  ...shared,
+  description:
+    "Delete a saved project action. Commands discovered in the repository cannot be deleted here; they come from its files.",
+  parameters: ProjectActionDeleteInput,
+}).annotate(Tool.Destructive, true);
+
 export const ProcessesToolkit = Toolkit.make(
   ProcessListTool,
   ProcessStopTool,
   ProcessRestartTool,
   ProjectActionsListTool,
   ProjectActionRunTool,
+  ProjectActionSaveTool,
+  ProjectActionDeleteTool,
 );

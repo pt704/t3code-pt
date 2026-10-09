@@ -33,7 +33,8 @@ import {
   decodeProjectScriptKeybindingRule,
 } from "~/lib/projectScriptKeybindings";
 import { keybindingFromKeyboardEvent } from "~/components/settings/KeybindingsSettings.logic";
-import { commandForProjectScript, nextProjectScriptId } from "~/projectScripts";
+import { commandForProjectScript } from "~/projectScripts";
+import { nextProjectScriptId } from "@t3tools/shared/projectScripts";
 import { readEnvironmentScope, useEnvironmentScope } from "~/state/session";
 import { useComposerMenuState } from "./chat/useComposerMenuState";
 import {

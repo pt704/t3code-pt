@@ -55,6 +55,8 @@ export type T3McpToolSummaryAction =
   | "process-restart"
   | "action-list"
   | "action-run"
+  | "action-save"
+  | "action-delete"
   | "attachment-prepare"
   | "attachment-discard"
   | "attachment-send"
@@ -297,6 +299,11 @@ const T3_MCP_TOOLS: Readonly<Record<string, T3McpToolDefinition>> = {
   t3_process_restart: tool(["Restart", "Restarting", "Restarted", "a process"], "process-restart"),
   t3_project_actions_list: tool(["List", "Listing", "Listed", "project actions"], "action-list"),
   t3_project_action_run: tool(["Run", "Running", "Ran", "a project action"], "action-run"),
+  t3_project_action_save: tool(["Save", "Saving", "Saved", "a project action"], "action-save"),
+  t3_project_action_delete: tool(
+    ["Delete", "Deleting", "Deleted", "a project action"],
+    "action-delete",
+  ),
   t3_preview_list: tool(["List", "Listing", "Listed", "preview tabs"], "browser", "browser"),
   t3_preview_close: tool(["Close", "Closing", "Closed", "a preview tab"], "browser", "browser"),
   t3_environment_read: tool(

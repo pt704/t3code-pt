@@ -632,6 +632,8 @@ function summaryActionPriority(action: ToolGroupAction | T3McpToolSummaryAction)
     case "process-stop":
     case "process-restart":
     case "action-run":
+    case "action-save":
+    case "action-delete":
     case "attachment-prepare":
     case "attachment-discard":
     case "attachment-send":

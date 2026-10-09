@@ -350,6 +350,16 @@ export function summarizeT3ToolCalls(
         quantity(countEntities(entityIds("actionId")), "project action"),
       );
       break;
+    case "action-save":
+      label = phrase("Saved", "save", quantity(countEntities(entityIds("name")), "project action"));
+      break;
+    case "action-delete":
+      label = phrase(
+        "Deleted",
+        "delete",
+        quantity(countEntities(entityIds("actionId")), "project action"),
+      );
+      break;
     case "environment-read":
       label = phrase("Checked", "check", `environment preferences ${times}`);
       break;
